@@ -1,6 +1,6 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { UserModel } from "../users/user.model";
 import { UserService } from "../users/user.service";
@@ -57,7 +57,7 @@ export async function login(data: LoginDTO): Promise<LoginResponse | null> {
 
   const token = jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  });
+  } as SignOptions);
 
   return {
     token,
@@ -195,7 +195,7 @@ export async function verifyOtp(data: VerifyOtpDTO): Promise<string | null> {
   const payload: ResetTokenPayload = { purpose: "password_reset", email };
   const resetToken = jwt.sign(payload, JWT_SECRET, {
     expiresIn: RESET_TOKEN_EXPIRES_IN,
-  });
+  } as SignOptions);
   return resetToken;
 }
 
@@ -273,7 +273,7 @@ export async function verifySignupOtp(
   const payload: SignupTokenPayload = { purpose: "signup", email };
   const signupToken = jwt.sign(payload, JWT_SECRET, {
     expiresIn: RESET_TOKEN_EXPIRES_IN,
-  });
+  } as SignOptions);
   return signupToken;
 }
 
