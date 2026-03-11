@@ -8,6 +8,7 @@ const pool = new Pool(
     ? {
         connectionString,
         // ssl: { rejectUnauthorized: false },
+        ssl: true,
       }
     : {
         host: "localhost",
