@@ -38,6 +38,38 @@ export const getEventById = async (req: Request, res: Response) => {
   }
 };
 
+export const getEventDetailById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params as { id: string };
+    const eventDetail = await EventService.getEventDetailById(id);
+
+    if (!eventDetail) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.json(eventDetail);
+  } catch (error) {
+    console.error("Error fetching event detail:", error);
+    res.status(500).json({ message: "Failed to fetch event detail" });
+  }
+};
+
+export const getEventVotesByCountry = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params as { id: string };
+    const data = await EventService.getEventVotesByCountry(id);
+
+    if (!data) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching event votes by country:", error);
+    res.status(500).json({ message: "Failed to fetch event votes by country" });
+  }
+};
+
 export const getEventsByStatus = async (req: Request, res: Response) => {
   try {
     const status = req.query.status as

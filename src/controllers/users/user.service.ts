@@ -35,6 +35,7 @@ export const UserService = {
       password_hash,
       full_name: data.full_name,
       date_of_birth: data.date_of_birth,
+      age: data.age ?? null,
       country_id: data.country_id,
       verification_status: data.verification_status ?? "unverified",
       created_at: now,
@@ -65,6 +66,7 @@ export const UserService = {
         : existing.password_hash,
       full_name: data.full_name ?? existing.full_name,
       date_of_birth: data.date_of_birth ?? existing.date_of_birth,
+      age: data.age ?? existing.age,
       country_id: data.country_id ?? existing.country_id,
       verification_status:
         data.verification_status ?? existing.verification_status,

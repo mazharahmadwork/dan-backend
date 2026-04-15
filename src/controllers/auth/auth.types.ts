@@ -13,6 +13,7 @@ export interface RegisterDTO {
   password: string;
   full_name: string;
   date_of_birth: string;
+  age?: number;
   country_id: string;
   verification_status?: string;
 }
@@ -35,6 +36,8 @@ export interface LoginResponse {
     full_name: string;
     verification_status: string;
     kyc_status: string;
+    country_id: string;
+    country_iso: string | null;
   };
 }
 
@@ -88,6 +91,7 @@ export interface SignupCreateDTO {
   password: string;
   full_name: string;
   date_of_birth: string;
+  age?: number;
   country_id: string;
   verification_status?: string;
 }

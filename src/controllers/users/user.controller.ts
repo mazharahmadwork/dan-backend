@@ -3,9 +3,28 @@ import { DatabaseError } from "pg";
 import { UserService } from "./user.service";
 import { User, UserResponse } from "./user.types";
 
+function calculateAgeFromDob(dateOfBirth: string): number | null {
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  return age >= 0 ? age : null;
+}
+
 function toResponse(user: User): UserResponse {
   const { password_hash: _, ...rest } = user;
-  return rest as UserResponse;
+  return {
+    ...rest,
+    // Always expose age calculated from DOB for consistency.
+    age: calculateAgeFromDob(user.date_of_birth)
+  } as UserResponse;
 }
 
 export const getUsers = async (_req: Request, res: Response) => {
@@ -41,6 +60,7 @@ export const createUser = async (req: Request, res: Response) => {
       password,
       full_name,
       date_of_birth,
+      age,
       country_id,
       verification_status
     } = req.body;
@@ -52,11 +72,21 @@ export const createUser = async (req: Request, res: Response) => {
       });
     }
 
+    if (age !== undefined) {
+      const parsedAge = Number(age);
+      if (!Number.isInteger(parsedAge) || parsedAge < 0) {
+        return res.status(400).json({
+          message: "age must be a non-negative integer"
+        });
+      }
+    }
+
     const user = await UserService.createUser({
       email,
       password,
       full_name,
       date_of_birth,
+      age: age !== undefined ? Number(age) : undefined,
       country_id,
       verification_status
     });
@@ -101,15 +131,26 @@ export const updateUser = async (req: Request, res: Response) => {
       password,
       full_name,
       date_of_birth,
+      age,
       country_id,
       verification_status
     } = req.body;
+
+    if (age !== undefined) {
+      const parsedAge = Number(age);
+      if (!Number.isInteger(parsedAge) || parsedAge < 0) {
+        return res.status(400).json({
+          message: "age must be a non-negative integer"
+        });
+      }
+    }
 
     const updated = await UserService.updateUser(id, {
       email,
       password,
       full_name,
       date_of_birth,
+      age: age !== undefined ? Number(age) : undefined,
       country_id,
       verification_status
     });

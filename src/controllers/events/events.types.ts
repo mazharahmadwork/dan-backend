@@ -42,3 +42,30 @@ export interface UpdateEventDTO {
   start_date?: string;
   end_date?: string;
 }
+
+export interface EventOptionWithVotes {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string;
+  votes_count: number;
+}
+
+export interface EventDetailResponse extends EventWithCategoryName {
+  options: EventOptionWithVotes[];
+  total_votes_cast: number;
+  country_participated_total: number;
+  avg_age: number | null;
+}
+
+export interface CountryOptionVoteCount {
+  option_id: string;
+  option_name: string;
+  votes_count: number;
+}
+
+export interface EventVotesByCountry {
+  country_id: string;
+  country_name: string;
+  options: CountryOptionVoteCount[];
+}

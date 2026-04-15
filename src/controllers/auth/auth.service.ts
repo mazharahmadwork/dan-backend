@@ -4,6 +4,7 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { UserModel } from "../users/user.model";
 import { UserService } from "../users/user.service";
+import { CountryModel } from "../countries/country.model";
 import type {
   LoginDTO,
   JwtPayload,
@@ -59,6 +60,8 @@ export async function login(data: LoginDTO): Promise<LoginResponse | null> {
     expiresIn: JWT_EXPIRES_IN,
   } as SignOptions);
 
+  const country = await CountryModel.findById(user.country_id);
+
   return {
     token,
     expiresIn: JWT_EXPIRES_IN,
@@ -68,6 +71,8 @@ export async function login(data: LoginDTO): Promise<LoginResponse | null> {
       full_name: user.full_name,
       verification_status: user.verification_status,
       kyc_status: user.verification_status,
+      country_id: user.country_id,
+      country_iso: country?.iso_code ?? null,
     },
   };
 }
@@ -309,6 +314,7 @@ export async function createUserAfterSignup(
       password,
       full_name: data.full_name.trim(),
       date_of_birth: data.date_of_birth,
+      age: data.age,
       country_id: data.country_id,
       verification_status: data.verification_status,
     });

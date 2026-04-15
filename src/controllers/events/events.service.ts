@@ -2,6 +2,9 @@ import { randomUUID } from "crypto";
 import {
   Event,
   EventWithCategoryName,
+  EventDetailResponse,
+  EventOptionWithVotes,
+  EventVotesByCountry,
   EventStatus,
   CreateEventDTO,
   UpdateEventDTO
@@ -9,6 +12,9 @@ import {
 import { EventModel } from "./events.model";
 import { CategoryModel } from "../categories/categories.model";
 import { UserModel } from "../users/user.model";
+import { EventOptionModel } from "../event-options/event-option.model";
+import { VoteModel } from "../votes/vote.model";
+import pool from "../../db";
 
 function getEventStatus(event: Event): EventStatus {
   const now = new Date();
@@ -81,6 +87,142 @@ export const EventService = {
     const event = await EventModel.findById(id);
     if (!event) return null;
     return withCategoryName(event);
+  },
+
+  async getEventDetailById(id: string): Promise<EventDetailResponse | null> {
+    const event = await EventService.getEventById(id);
+    if (!event) return null;
+
+    const [options, votes, aggregateResult] = await Promise.all([
+      EventOptionModel.findByEventId(id),
+      VoteModel.findByEventId(id),
+      pool.query<{
+        country_participated_total: string;
+        avg_age: string | null;
+      }>(
+        `SELECT
+           COUNT(DISTINCT v.country_id)::text AS country_participated_total,
+           ROUND(AVG(DATE_PART('year', AGE(CURRENT_DATE, u.date_of_birth)))::numeric, 2)::text AS avg_age
+         FROM votes v
+         JOIN users u ON u.id = v.user_id
+         WHERE v.event_id = $1`,
+        [id]
+      )
+    ]);
+
+    const votesByOptionId = votes.reduce<Record<string, number>>((acc, vote) => {
+      acc[vote.option_id] = (acc[vote.option_id] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const optionsWithVotes: EventOptionWithVotes[] = options.map((option) => ({
+      ...option,
+      votes_count: votesByOptionId[option.id] ?? 0
+    }));
+
+    const aggregate = aggregateResult.rows[0];
+    return {
+      ...event,
+      options: optionsWithVotes,
+      total_votes_cast: votes.length,
+      country_participated_total: Number(
+        aggregate?.country_participated_total ?? "0"
+      ),
+      avg_age: aggregate?.avg_age != null ? Number(aggregate.avg_age) : null
+    };
+  },
+
+  async getEventVotesByCountry(id: string): Promise<EventVotesByCountry[] | null> {
+    const event = await EventModel.findById(id);
+    if (!event) return null;
+
+    const [optionsResult, matrixResult, globalResult] = await Promise.all([
+      pool.query<{ option_id: string; option_name: string }>(
+        `SELECT id AS option_id, name AS option_name
+         FROM event_options
+         WHERE event_id = $1
+         ORDER BY name`,
+        [id]
+      ),
+      pool.query<{
+        country_id: string;
+        country_name: string;
+        option_id: string;
+        votes_count: string;
+      }>(
+        `SELECT
+           c.id AS country_id,
+           c.name AS country_name,
+           eo.id AS option_id,
+           COUNT(v.id)::text AS votes_count
+         FROM (
+           SELECT DISTINCT country_id
+           FROM votes
+           WHERE event_id = $1
+         ) vc
+         JOIN countries c ON c.id = vc.country_id
+         CROSS JOIN event_options eo
+         LEFT JOIN votes v
+           ON v.event_id = $1
+          AND v.country_id = c.id
+          AND v.option_id = eo.id
+         WHERE eo.event_id = $1
+         GROUP BY c.id, c.name, eo.id
+         ORDER BY c.name, eo.id`,
+        [id]
+      ),
+      pool.query<{
+        option_id: string;
+        votes_count: string;
+      }>(
+        `SELECT
+           eo.id AS option_id,
+           COUNT(v.id)::text AS votes_count
+         FROM event_options eo
+         LEFT JOIN votes v
+           ON v.event_id = $1
+          AND v.option_id = eo.id
+         WHERE eo.event_id = $1
+         GROUP BY eo.id
+         ORDER BY eo.id`,
+        [id]
+      )
+    ]);
+
+    const optionsById = Object.fromEntries(
+      optionsResult.rows.map((row) => [row.option_id, row.option_name])
+    );
+
+    const grouped = new Map<string, EventVotesByCountry>();
+    for (const row of matrixResult.rows) {
+      if (!grouped.has(row.country_id)) {
+        grouped.set(row.country_id, {
+          country_id: row.country_id,
+          country_name: row.country_name,
+          options: []
+        });
+      }
+      grouped.get(row.country_id)!.options.push({
+        option_id: row.option_id,
+        option_name: optionsById[row.option_id] ?? row.option_id,
+        votes_count: Number(row.votes_count)
+      });
+    }
+
+    const globalOptions = globalResult.rows.map((row) => ({
+      option_id: row.option_id,
+      option_name: optionsById[row.option_id] ?? row.option_id,
+      votes_count: Number(row.votes_count)
+    }));
+
+    return [
+      {
+        country_id: "global",
+        country_name: "Global",
+        options: globalOptions
+      },
+      ...grouped.values()
+    ];
   },
 
   async getEventsByCategoryId(

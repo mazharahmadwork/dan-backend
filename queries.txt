@@ -13,11 +13,16 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     date_of_birth DATE NOT NULL,
+    age INTEGER,
     country_id TEXT NOT NULL REFERENCES countries(id),
     verification_status VARCHAR(50) DEFAULT 'unverified',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- For existing Neon databases that already have users table
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS age INTEGER;
 
 -- Categories table (self-referencing parent_id)
 CREATE TABLE categories (

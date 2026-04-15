@@ -281,6 +281,7 @@ export async function signupHandler(req: Request, res: Response) {
       password,
       full_name,
       date_of_birth,
+      age,
       country_id,
       verification_status,
     } = req.body;
@@ -302,6 +303,17 @@ export async function signupHandler(req: Request, res: Response) {
       return;
     }
 
+    if (age !== undefined) {
+      const parsedAge = Number(age);
+      if (!Number.isInteger(parsedAge) || parsedAge < 0) {
+        res.status(400).json({
+          success: false,
+          message: "age must be a non-negative integer",
+        });
+        return;
+      }
+    }
+
     let user: { id: string; email: string; full_name: string } | null = null;
     try {
       user = await createUserAfterSignup({
@@ -309,6 +321,7 @@ export async function signupHandler(req: Request, res: Response) {
         password: String(password).trim(),
         full_name: String(full_name).trim(),
         date_of_birth: String(date_of_birth),
+        age: age !== undefined ? Number(age) : undefined,
         country_id: String(country_id),
         verification_status: verification_status
           ? String(verification_status)

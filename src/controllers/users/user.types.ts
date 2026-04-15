@@ -4,6 +4,7 @@ export interface User {
   password_hash: string;
   full_name: string;
   date_of_birth: string;
+  age: number | null;
   country_id: string;
   verification_status: string;
   created_at: string;
@@ -15,6 +16,7 @@ export interface CreateUserDTO {
   password: string;
   full_name: string;
   date_of_birth: string;
+  age?: number;
   country_id: string;
   verification_status?: string;
 }
@@ -24,6 +26,7 @@ export interface UpdateUserDTO {
   password?: string;
   full_name?: string;
   date_of_birth?: string;
+  age?: number;
   country_id?: string;
   verification_status?: string;
 }

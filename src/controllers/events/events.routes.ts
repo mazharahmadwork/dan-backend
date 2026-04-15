@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   getEvents,
   getEventById,
+  getEventDetailById,
+  getEventVotesByCountry,
   getHeroEvents,
   getEventsByCategoryId,
   getActiveEventsByCategoryId,
@@ -39,6 +41,12 @@ router.get("/by-category-completed", getCompletedEventsByCategoryId);
 
 // GET /api/events/by-created-by?created_by=<user-uuid>
 router.get("/by-created-by", getEventsByCreatedBy);
+
+// GET /api/events/event-detail/:id
+router.get("/event-detail/:id", getEventDetailById);
+
+// GET /api/events/event-detail/by-country/:id
+router.get("/event-detail/by-country/:id", getEventVotesByCountry);
 
 // GET /api/events/:id
 router.get("/:id", getEventById);
